@@ -7,7 +7,7 @@ import { registerIpcHandlers } from './ipc'
 import { registerWindowHandlers } from './ipc/window'
 import { initPrintQueue } from './lib/printQueue'
 import { installCrashHandlers } from './lib/crashLog'
-import { checkForUpdates, UPDATE_RECHECK_INTERVAL_MS } from './lib/autoUpdate'
+import { checkForUpdates, initAutoUpdateNotify, UPDATE_RECHECK_INTERVAL_MS } from './lib/autoUpdate'
 import { startBackupSchedule } from './lib/backup'
 import { checkStatus, LICENSE_RECHECK_INTERVAL_MS } from './lib/license'
 import { syncDisplayProfiles, type ProfileTarget } from './lib/customerDisplay'
@@ -89,6 +89,7 @@ app.whenReady().then(() => {
 
   mainWindow = createWindow()
   syncDisplayProfiles(getDisplayProfileTargets(db))
+  initAutoUpdateNotify((event) => mainWindow?.webContents.send('update:status', event))
   checkForUpdates()
   setInterval(checkForUpdates, UPDATE_RECHECK_INTERVAL_MS)
 

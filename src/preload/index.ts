@@ -53,6 +53,7 @@ import type {
   TestActionResult,
   TillCloseResult,
   TillStatus,
+  UpdateStatusEvent,
   VoidSaleInput
 } from '@shared/types'
 
@@ -77,7 +78,12 @@ const api: PosApi = {
     }
   },
   autoUpdate: {
-    check: (): Promise<void> => ipcRenderer.invoke('autoUpdate:check')
+    check: (): Promise<void> => ipcRenderer.invoke('autoUpdate:check'),
+    onStatus: (callback: (event: UpdateStatusEvent) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, data: UpdateStatusEvent): void => callback(data)
+      ipcRenderer.on('update:status', listener)
+      return () => ipcRenderer.removeListener('update:status', listener)
+    }
   },
   catalog: {
     list: (): Promise<CatalogPayload> => ipcRenderer.invoke('catalog:list'),

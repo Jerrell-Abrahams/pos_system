@@ -260,6 +260,14 @@ export interface PrintIssueEvent {
   message: string
 }
 
+export type UpdateStatusEvent =
+  | { kind: 'checking' }
+  | { kind: 'available'; version: string }
+  | { kind: 'not-available' }
+  | { kind: 'downloading'; percent: number }
+  | { kind: 'downloaded'; version: string }
+  | { kind: 'error'; message: string }
+
 export interface TestActionResult {
   ok: boolean
   error?: string
@@ -559,6 +567,7 @@ export interface PosApi {
   }
   autoUpdate: {
     check(): Promise<void>
+    onStatus(callback: (event: UpdateStatusEvent) => void): () => void
   }
   catalog: {
     list(): Promise<CatalogPayload>

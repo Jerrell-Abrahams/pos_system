@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { SettingsPayload } from '@shared/types'
+import type { SettingsPayload, UpdateStatusEvent } from '@shared/types'
 import { useAuthStore } from '../../stores/authStore'
 import { useLicenseStore } from '../../stores/licenseStore'
 import { useNavStore, type Screen } from '../../stores/navStore'
@@ -23,7 +23,7 @@ export function SettingsScreen(): React.JSX.Element {
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
   const [testing, setTesting] = useState<'print' | 'drawer' | null>(null)
-  const [checkingUpdate, setCheckingUpdate] = useState(false)
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatusEvent | null>(null)
   const [backingUp, setBackingUp] = useState(false)
   const [dirty, setDirty] = useState(false)
   const [pendingNav, setPendingNav] = useState<Screen | null>(null)
@@ -34,6 +34,10 @@ export function SettingsScreen(): React.JSX.Element {
   useEffect(() => {
     dirtyRef.current = dirty
   }, [dirty])
+
+  // checkForUpdates() itself returns void the instant it's kicked off, well before electron-updater
+  // has actually talked to GitHub -- this is the only way the button reflects what really happened.
+  useEffect(() => window.api.autoUpdate.onStatus(setUpdateStatus), [])
 
   // Veto navigating away with unsaved edits; stash the target and let the confirm dialog re-issue
   // the nav once the manager accepts losing them.
@@ -109,10 +113,8 @@ export function SettingsScreen(): React.JSX.Element {
   }
 
   async function checkForUpdate(): Promise<void> {
-    setCheckingUpdate(true)
+    setUpdateStatus({ kind: 'checking' })
     await window.api.autoUpdate.check()
-    pushToast('Checking for updates in the background…', 'info')
-    setCheckingUpdate(false)
   }
 
   async function logoutTenant(): Promise<void> {
@@ -302,11 +304,26 @@ export function SettingsScreen(): React.JSX.Element {
             <button
               type="button"
               onClick={() => void checkForUpdate()}
-              disabled={checkingUpdate}
+              disabled={updateStatus?.kind === 'checking' || updateStatus?.kind === 'downloading'}
               className="h-12 w-full rounded-xl border border-border text-sm font-medium text-ink active:bg-accent-tint disabled:opacity-40"
             >
-              {checkingUpdate ? 'Checking…' : 'Check for Update'}
+              {updateStatus?.kind === 'checking' && 'Checking…'}
+              {updateStatus?.kind === 'downloading' && `Downloading update… ${updateStatus.percent}%`}
+              {(!updateStatus || (updateStatus.kind !== 'checking' && updateStatus.kind !== 'downloading')) &&
+                'Check for Update'}
             </button>
+            {updateStatus?.kind === 'available' && (
+              <p className="text-xs text-ink-muted">Update v{updateStatus.version} found — downloading…</p>
+            )}
+            {updateStatus?.kind === 'not-available' && (
+              <p className="text-xs text-ink-muted">You&apos;re on the latest version.</p>
+            )}
+            {updateStatus?.kind === 'downloaded' && (
+              <p className="text-xs text-success">Update v{updateStatus.version} ready — installs on next restart.</p>
+            )}
+            {updateStatus?.kind === 'error' && (
+              <p className="text-xs text-danger">Update check failed: {updateStatus.message}</p>
+            )}
           </Section>
 
           <Section title="Tenant">
