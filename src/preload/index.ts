@@ -46,6 +46,8 @@ import type {
   SettingsPayload,
   SettingsUpdateInput,
   SetupStatus,
+  SplitPackInput,
+  SplitPackResult,
   StockAdjustInput,
   StockAdjustResult,
   TestActionResult,
@@ -130,7 +132,8 @@ const api: PosApi = {
   },
   inventory: {
     adjustStock: (input: StockAdjustInput): Promise<StockAdjustResult> =>
-      ipcRenderer.invoke('inventory:adjustStock', input)
+      ipcRenderer.invoke('inventory:adjustStock', input),
+    splitPack: (input: SplitPackInput): Promise<SplitPackResult> => ipcRenderer.invoke('inventory:splitPack', input)
   },
   dashboard: {
     summary: (): Promise<DashboardSummary> => ipcRenderer.invoke('dashboard:summary'),

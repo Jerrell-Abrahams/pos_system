@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import type { ProductDetail } from '@shared/types'
+import { useAuthStore } from '../../stores/authStore'
+import { useProductsStore } from '../../stores/productsStore'
 import { useToastStore } from '../../stores/toastStore'
+import { ConfirmDialog } from '../common/ConfirmDialog'
 import { Keypad } from '../common/Keypad'
 import { ManagerPinModal } from '../common/ManagerPinModal'
 import { useBarcodeScanner } from '../pos/useBarcodeScanner'
@@ -15,10 +18,13 @@ const MAX_QTY = 99999
 
 export function StockAdjustModal({ product, onSaved, onClose }: StockAdjustModalProps): React.JSX.Element {
   const pushToast = useToastStore((s) => s.push)
+  const employee = useAuthStore((s) => s.employee)
+  const targetName = useProductsStore((s) => s.products).find((p) => p.id === product.splitTargetProductId)?.name ?? null
   const [direction, setDirection] = useState<'in' | 'out'>('in')
   const [qty, setQty] = useState(0)
   const [reason, setReason] = useState('')
   const [showManagerGate, setShowManagerGate] = useState(false)
+  const [confirmingSplit, setConfirmingSplit] = useState(false)
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
@@ -60,6 +66,34 @@ export function StockAdjustModal({ product, onSaved, onClose }: StockAdjustModal
     }
   }
 
+  async function splitPack(): Promise<void> {
+    setConfirmingSplit(false)
+    if (!employee) return
+    setSubmitting(true)
+    setError('')
+    try {
+      await window.api.inventory.splitPack({ packProductId: product.id, employeeId: employee.id })
+      pushToast('Pack split into 6 singles', 'info')
+      onSaved()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not split pack')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  if (confirmingSplit) {
+    return (
+      <ConfirmDialog
+        title="Split Pack"
+        message="Split 1 pack into 6 singles?"
+        confirmLabel="Split"
+        onConfirm={() => void splitPack()}
+        onCancel={() => setConfirmingSplit(false)}
+      />
+    )
+  }
+
   if (showManagerGate) {
     return (
       <ManagerPinModal
@@ -79,6 +113,20 @@ export function StockAdjustModal({ product, onSaved, onClose }: StockAdjustModal
       <div className="max-h-[90vh] w-full max-w-96 overflow-y-auto rounded-2xl border border-border bg-surface p-6">
         <h2 className="text-center text-lg font-semibold text-ink">{product.name}</h2>
         <p className="mt-1 text-center text-sm text-ink-muted">Currently {product.stockQty} in stock</p>
+
+        {product.is6Pack && (
+          <div className="mt-4 rounded-xl border border-border bg-bg p-3 text-center">
+            <p className="text-xs text-ink-muted">Splits into 6 × {targetName ?? '(no single product set)'}</p>
+            <button
+              type="button"
+              disabled={!targetName || product.stockQty < 1 || submitting}
+              onClick={() => setConfirmingSplit(true)}
+              className="mt-2 h-12 w-full rounded-xl border border-accent-border bg-accent-tint text-sm font-semibold text-accent-light disabled:opacity-40"
+            >
+              Split Pack
+            </button>
+          </div>
+        )}
 
         <div className="mt-4 flex gap-2">
           <button

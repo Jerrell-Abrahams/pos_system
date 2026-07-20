@@ -11,6 +11,7 @@ import m010 from './010_display_profiles.sql?raw'
 import m011 from './011_display_slide_announcement.sql?raw'
 import m012 from './012_product_barcodes.sql?raw'
 import m013 from './013_payment_terminal.sql?raw'
+import m014 from './014_split_pack.sql?raw'
 
 export interface Migration {
   version: number
@@ -31,6 +32,7 @@ export const migrations: Migration[] = [
   { version: 10, name: '010_display_profiles', sql: m010 },
   { version: 11, name: '011_display_slide_announcement', sql: m011 },
   { version: 12, name: '012_product_barcodes', sql: m012 },
-  { version: 13, name: '013_payment_terminal', sql: m013 }
+  { version: 13, name: '013_payment_terminal', sql: m013 },
+  { version: 14, name: '014_split_pack', sql: m014 }
 ]
 // Next migration: add 014_xxx.sql next to this file and push one more entry here.

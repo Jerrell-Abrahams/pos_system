@@ -26,6 +26,8 @@ interface ProductRow {
   stock_qty: number
   low_stock_threshold: number
   active: number
+  is_6_pack: number
+  split_target_product_id: number | null
 }
 
 function toProductDetail(row: ProductRow, barcodes: string[]): ProductDetail {
@@ -38,8 +40,28 @@ function toProductDetail(row: ProductRow, barcodes: string[]): ProductDetail {
     stockQty: row.stock_qty,
     lowStockThreshold: row.low_stock_threshold,
     barcodes,
-    active: row.active === 1
+    active: row.active === 1,
+    is6Pack: row.is_6_pack === 1,
+    splitTargetProductId: row.split_target_product_id
   }
+}
+
+// Resolves and validates the two split-pack fields for a save. split_target_product_id only means
+// anything when is_6_pack is set, so it's forced NULL otherwise. A pack can't split into itself,
+// and the target must exist — a friendly error rather than a raw FK failure at write time.
+function resolveSplitTarget(
+  db: Database.Database,
+  is6Pack: boolean,
+  splitTargetProductId: number | null,
+  selfId: number | null
+): number | null {
+  if (!is6Pack || splitTargetProductId == null) return null
+  if (selfId !== null && splitTargetProductId === selfId) {
+    throw new Error('A 6-pack cannot split into itself')
+  }
+  const target = db.prepare('SELECT id FROM products WHERE id = ?').get(splitTargetProductId)
+  if (!target) throw new Error('The selected single product does not exist')
+  return splitTargetProductId
 }
 
 // Trims each code, drops blanks, and removes duplicates within the one product's list — the same
@@ -89,7 +111,8 @@ export function registerProductsHandlers(db: Database.Database): void {
       .all() as CategoryRow[]
     const products = db
       .prepare(
-        `SELECT id, name, category_id, sell_price_cents, cost_price_cents, stock_qty, low_stock_threshold, active
+        `SELECT id, name, category_id, sell_price_cents, cost_price_cents, stock_qty, low_stock_threshold, active,
+                is_6_pack, split_target_product_id
          FROM products ORDER BY name`
       )
       .all() as ProductRow[]
@@ -117,14 +140,17 @@ export function registerProductsHandlers(db: Database.Database): void {
     if (input.sellPriceCents <= 0) throw new Error('Sell price must be positive')
     requireManager(db, input.authorizedBy)
     const barcodes = normalizeBarcodes(input.barcodes)
+    // selfId is null: a brand-new product has no id yet, so it can't reference itself.
+    const splitTargetProductId = resolveSplitTarget(db, input.is6Pack, input.splitTargetProductId, null)
 
     const detail = db.transaction((): ProductDetail => {
       const id = Number(
         db
           .prepare(
             `INSERT INTO products
-              (name, category_id, sell_price_cents, cost_price_cents, stock_qty, low_stock_threshold, active)
-             VALUES (?, ?, ?, ?, ?, ?, 1)`
+              (name, category_id, sell_price_cents, cost_price_cents, stock_qty, low_stock_threshold, active,
+               is_6_pack, split_target_product_id)
+             VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)`
           )
           .run(
             input.name.trim(),
@@ -132,7 +158,9 @@ export function registerProductsHandlers(db: Database.Database): void {
             input.sellPriceCents,
             input.costPriceCents,
             input.stockQty,
-            input.lowStockThreshold
+            input.lowStockThreshold,
+            input.is6Pack ? 1 : 0,
+            splitTargetProductId
           ).lastInsertRowid
       )
       setBarcodes(db, id, barcodes)
@@ -155,6 +183,7 @@ export function registerProductsHandlers(db: Database.Database): void {
     if (input.sellPriceCents <= 0) throw new Error('Sell price must be positive')
     requireManager(db, input.authorizedBy)
     const barcodes = normalizeBarcodes(input.barcodes)
+    const splitTargetProductId = resolveSplitTarget(db, input.is6Pack, input.splitTargetProductId, input.id)
 
     const detail = db.transaction((): ProductDetail => {
       const beforeRow = db.prepare('SELECT * FROM products WHERE id = ?').get(input.id) as ProductRow | undefined
@@ -164,7 +193,8 @@ export function registerProductsHandlers(db: Database.Database): void {
       db.prepare(
         `UPDATE products
          SET name = ?, category_id = ?, sell_price_cents = ?, cost_price_cents = ?,
-             low_stock_threshold = ?, active = ?, updated_at = datetime('now')
+             low_stock_threshold = ?, active = ?, is_6_pack = ?, split_target_product_id = ?,
+             updated_at = datetime('now')
          WHERE id = ?`
       ).run(
         input.name.trim(),
@@ -173,6 +203,8 @@ export function registerProductsHandlers(db: Database.Database): void {
         input.costPriceCents,
         input.lowStockThreshold,
         input.active ? 1 : 0,
+        input.is6Pack ? 1 : 0,
+        splitTargetProductId,
         input.id
       )
       setBarcodes(db, input.id, barcodes)
@@ -182,7 +214,17 @@ export function registerProductsHandlers(db: Database.Database): void {
       const changes = diffFields(
         toProductDetail(beforeRow, beforeBarcodes),
         toProductDetail(row, barcodes),
-        ['name', 'categoryId', 'sellPriceCents', 'costPriceCents', 'lowStockThreshold', 'barcodes', 'active']
+        [
+          'name',
+          'categoryId',
+          'sellPriceCents',
+          'costPriceCents',
+          'lowStockThreshold',
+          'barcodes',
+          'active',
+          'is6Pack',
+          'splitTargetProductId'
+        ]
       )
       logAudit(db, {
         employeeId: input.authorizedBy,

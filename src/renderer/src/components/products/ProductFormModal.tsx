@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import type { Category, ProductDetail } from '@shared/types'
+import { useProductsStore } from '../../stores/productsStore'
 import { useToastStore } from '../../stores/toastStore'
 import { ConfirmDialog } from '../common/ConfirmDialog'
 import { ManagerPinModal } from '../common/ManagerPinModal'
 import { MoneyField } from '../common/MoneyField'
 import { NumberStepperField } from '../common/NumberStepperField'
+import { Select } from '../common/Select'
 import { useBarcodeScanner } from '../pos/useBarcodeScanner'
 import { CategoryField } from './CategoryField'
 
@@ -25,11 +27,19 @@ export function ProductFormModal({ categories, product, onSaved, onClose }: Prod
   const [barcodes, setBarcodes] = useState<string[]>(product?.barcodes ?? [])
   const [barcodeInput, setBarcodeInput] = useState('')
   const [active, setActive] = useState(product?.active ?? true)
+  const [is6Pack, setIs6Pack] = useState(product?.is6Pack ?? false)
+  const [splitTargetProductId, setSplitTargetProductId] = useState<number | null>(
+    product?.splitTargetProductId ?? null
+  )
   const [gate, setGate] = useState<'save' | 'delete' | null>(null)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const pushToast = useToastStore((s) => s.push)
+  // A split target is a single unit, so 6-packs and this product itself are excluded.
+  const singleProducts = useProductsStore((s) => s.products).filter(
+    (p) => p.active && !p.is6Pack && p.id !== product?.id
+  )
 
   function addBarcode(raw: string): void {
     const code = raw.trim()
@@ -63,6 +73,8 @@ export function ProductFormModal({ categories, product, onSaved, onClose }: Prod
           lowStockThreshold,
           barcodes,
           active,
+          is6Pack,
+          splitTargetProductId: is6Pack ? splitTargetProductId : null,
           authorizedBy
         })
       } else {
@@ -74,6 +86,8 @@ export function ProductFormModal({ categories, product, onSaved, onClose }: Prod
           stockQty,
           lowStockThreshold,
           barcodes,
+          is6Pack,
+          splitTargetProductId: is6Pack ? splitTargetProductId : null,
           authorizedBy
         })
       }
@@ -196,6 +210,32 @@ export function ProductFormModal({ categories, product, onSaved, onClose }: Prod
               </div>
             )}
           </Field>
+
+          <label className="flex h-12 cursor-pointer items-center gap-3 rounded-xl border border-border bg-bg px-3">
+            <input
+              type="checkbox"
+              checked={is6Pack}
+              onChange={(e) => setIs6Pack(e.target.checked)}
+              className="h-5 w-5 accent-accent"
+            />
+            <span className="text-sm text-ink">Is 6 Pack</span>
+          </label>
+
+          {is6Pack && (
+            <Field label="Single Product — receives 6 units when a pack is split">
+              <Select
+                value={splitTargetProductId ?? ''}
+                onChange={(v) => setSplitTargetProductId(v ? Number(v) : null)}
+              >
+                <option value="">Choose a single product…</option>
+                {singleProducts.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          )}
 
           {product && (
             <>

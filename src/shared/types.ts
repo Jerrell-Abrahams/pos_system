@@ -275,6 +275,10 @@ export interface ProductDetail {
   lowStockThreshold: number
   barcodes: string[]
   active: boolean
+  /** Marks a case/multipack that can be broken open into single units. */
+  is6Pack: boolean
+  /** Single-unit product that receives 6 units when a pack is split. Only meaningful when is6Pack. */
+  splitTargetProductId: number | null
 }
 
 export interface ProductsPayload {
@@ -290,6 +294,8 @@ export interface ProductCreateInput {
   stockQty: number
   lowStockThreshold: number
   barcodes: string[]
+  is6Pack: boolean
+  splitTargetProductId: number | null
   authorizedBy: number
 }
 
@@ -302,6 +308,8 @@ export interface ProductUpdateInput {
   lowStockThreshold: number
   barcodes: string[]
   active: boolean
+  is6Pack: boolean
+  splitTargetProductId: number | null
   authorizedBy: number
 }
 
@@ -320,6 +328,18 @@ export interface StockAdjustInput {
 export interface StockAdjustResult {
   productId: number
   newStockQty: number
+}
+
+export interface SplitPackInput {
+  packProductId: number
+  employeeId: number
+}
+
+export interface SplitPackResult {
+  packProductId: number
+  packStockQty: number
+  targetProductId: number
+  targetStockQty: number
 }
 
 export interface OpenTillInfo {
@@ -583,6 +603,7 @@ export interface PosApi {
   }
   inventory: {
     adjustStock(input: StockAdjustInput): Promise<StockAdjustResult>
+    splitPack(input: SplitPackInput): Promise<SplitPackResult>
   }
   dashboard: {
     summary(): Promise<DashboardSummary>
