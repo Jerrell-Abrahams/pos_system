@@ -13,6 +13,18 @@ if (!process.env.GH_TOKEN) {
   process.exit(1)
 }
 
-require('node:child_process').execSync(`electron-builder ${process.argv.slice(2).join(' ')}`, {
-  stdio: 'inherit'
-})
+const { execSync } = require('node:child_process')
+const cmd = `electron-builder ${process.argv.slice(2).join(' ')}`
+
+// electron-builder fires one "create release" call per uploaded artifact (exe + blockmap);
+// whichever call loses that race gets back a 422 "already_exists" and aborts the whole run,
+// even though the winner's release now exists with some assets already on it. This has hit
+// nearly every publish so far -- re-running always fixes it (electron-builder sees the release
+// already exists and just uploads what's still missing), so do that automatically once instead
+// of a human re-running the same command by hand again.
+try {
+  execSync(cmd, { stdio: 'inherit' })
+} catch {
+  console.error('\nPublish failed (likely the known concurrent-release race) -- retrying once...\n')
+  execSync(cmd, { stdio: 'inherit' })
+}
