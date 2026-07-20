@@ -1,16 +1,9 @@
 import { app, dialog } from 'electron'
-import { appendFileSync } from 'fs'
-import { join } from 'path'
+import { appendLog } from './fileLog'
 
 function logToFile(label: string, err: unknown): void {
-  const stack = err instanceof Error ? err.stack : String(err)
-  const line = `[${new Date().toISOString()}] ${label}\n${stack}\n\n`
-  console.error(line)
-  try {
-    appendFileSync(join(app.getPath('userData'), 'crash.log'), line)
-  } catch {
-    // logging is best-effort; don't let a failed write mask the original crash
-  }
+  console.error(label, err)
+  appendLog('crash.log', label, err)
 }
 
 export function installCrashHandlers(): void {

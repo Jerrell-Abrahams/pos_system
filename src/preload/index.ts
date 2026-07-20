@@ -5,6 +5,9 @@ import type {
   AuditLogFilter,
   CashFlowSummary,
   CatalogPayload,
+  Category,
+  CategoryCreateInput,
+  CategoryDeleteInput,
   Combo,
   ComboCreateInput,
   ComboUpdateInput,
@@ -75,7 +78,11 @@ const api: PosApi = {
     check: (): Promise<void> => ipcRenderer.invoke('autoUpdate:check')
   },
   catalog: {
-    list: (): Promise<CatalogPayload> => ipcRenderer.invoke('catalog:list')
+    list: (): Promise<CatalogPayload> => ipcRenderer.invoke('catalog:list'),
+    createCategory: (input: CategoryCreateInput): Promise<Category> =>
+      ipcRenderer.invoke('catalog:createCategory', input),
+    deleteCategory: (input: CategoryDeleteInput): Promise<void> =>
+      ipcRenderer.invoke('catalog:deleteCategory', input)
   },
   sales: {
     create: (input: CreateSaleInput): Promise<CreateSaleResult> => ipcRenderer.invoke('sales:create', input),

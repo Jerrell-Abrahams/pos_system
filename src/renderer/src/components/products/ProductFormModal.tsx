@@ -5,8 +5,8 @@ import { ConfirmDialog } from '../common/ConfirmDialog'
 import { ManagerPinModal } from '../common/ManagerPinModal'
 import { MoneyField } from '../common/MoneyField'
 import { NumberStepperField } from '../common/NumberStepperField'
-import { Select } from '../common/Select'
 import { useBarcodeScanner } from '../pos/useBarcodeScanner'
+import { CategoryField } from './CategoryField'
 
 interface ProductFormModalProps {
   categories: Category[]
@@ -146,13 +146,7 @@ export function ProductFormModal({ categories, product, onSaved, onClose }: Prod
           </Field>
 
           <Field label="Category">
-            <Select value={categoryId ?? ''} onChange={(v) => setCategoryId(v ? Number(v) : null)}>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </Select>
+            <CategoryField categories={categories} value={categoryId} onChange={setCategoryId} />
           </Field>
 
           <div className="grid grid-cols-2 gap-3">

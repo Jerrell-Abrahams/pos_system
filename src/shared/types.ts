@@ -92,6 +92,16 @@ export interface Category {
   sortOrder: number
 }
 
+export interface CategoryCreateInput {
+  name: string
+  authorizedBy: number
+}
+
+export interface CategoryDeleteInput {
+  id: number
+  authorizedBy: number
+}
+
 export interface Product {
   id: number
   name: string
@@ -532,6 +542,8 @@ export interface PosApi {
   }
   catalog: {
     list(): Promise<CatalogPayload>
+    createCategory(input: CategoryCreateInput): Promise<Category>
+    deleteCategory(input: CategoryDeleteInput): Promise<void>
   }
   sales: {
     create(input: CreateSaleInput): Promise<CreateSaleResult>
