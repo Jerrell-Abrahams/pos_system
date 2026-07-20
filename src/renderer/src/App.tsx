@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useAuthStore } from './stores/authStore'
 import { useLicenseStore } from './stores/licenseStore'
+import { useUpdateStore } from './stores/updateStore'
 import { ManagerPinModal } from './components/common/ManagerPinModal'
 import { useFullscreenExitGesture } from './components/shell/useFullscreenExitGesture'
+import { ToastContainer } from './components/shell/ToastContainer'
 import PinLogin from './components/login/PinLogin'
 import { AppShell } from './components/shell/AppShell'
 import { LicenseGateScreen } from './components/license/LicenseGateScreen'
@@ -12,6 +14,7 @@ function App(): React.JSX.Element {
   const employee = useAuthStore((s) => s.employee)
   const licenseStatus = useLicenseStore((s) => s.status)
   const initLicense = useLicenseStore((s) => s.init)
+  const initUpdateStatus = useUpdateStore((s) => s.init)
 
   // null = not checked yet; a packaged install has no employees until first-run setup creates one.
   const [needsSetup, setNeedsSetup] = useState<boolean | null>(null)
@@ -25,6 +28,12 @@ function App(): React.JSX.Element {
   useEffect(() => {
     initLicense()
   }, [initLicense])
+
+  // Lives here (not Settings) so a download that keeps running after the cashier navigates
+  // away still surfaces its progress/result -- the update itself isn't tied to any one screen.
+  useEffect(() => {
+    initUpdateStatus()
+  }, [initUpdateStatus])
 
   useEffect(() => {
     void window.api.setup.status().then((s) => setNeedsSetup(s.needsSetup))
@@ -48,6 +57,7 @@ function App(): React.JSX.Element {
   return (
     <>
       {content}
+      <ToastContainer />
       {showFullscreenGate && (
         <ManagerPinModal
           title="Toggle fullscreen?"

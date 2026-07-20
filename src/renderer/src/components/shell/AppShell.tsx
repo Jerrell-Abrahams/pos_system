@@ -7,7 +7,6 @@ import { useToastStore } from '../../stores/toastStore'
 import { useInactivityTimer } from './useInactivityTimer'
 import { EmployeePill } from './EmployeePill'
 import { Header } from './Header'
-import { ToastContainer } from './ToastContainer'
 import { AnalyticsScreen } from '../analytics/AnalyticsScreen'
 import { DashboardScreen } from '../dashboard/DashboardScreen'
 import { DisplayManagerScreen } from '../displayManager/DisplayManagerScreen'
@@ -77,7 +76,6 @@ export function AppShell(): React.JSX.Element {
           <OpenTillPanel />
         )}
       </main>
-      <ToastContainer />
       <EmployeePill />
     </div>
   )

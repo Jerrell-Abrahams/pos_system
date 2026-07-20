@@ -10,7 +10,11 @@ export function ToastContainer(): React.JSX.Element {
         <div
           key={t.id}
           className={`pointer-events-auto max-w-sm rounded-xl border px-4 py-3 text-sm ${
-            t.tone === 'error' ? 'border-danger bg-surface text-danger' : 'border-border bg-surface text-ink'
+            t.tone === 'error'
+              ? 'border-danger bg-surface text-danger'
+              : t.tone === 'success'
+                ? 'border-success bg-surface text-success'
+                : 'border-border bg-surface text-ink'
           }`}
         >
           <div className="flex items-start justify-between gap-3">

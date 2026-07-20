@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import type { SettingsPayload, UpdateStatusEvent } from '@shared/types'
+import type { SettingsPayload } from '@shared/types'
 import { useAuthStore } from '../../stores/authStore'
 import { useLicenseStore } from '../../stores/licenseStore'
 import { useNavStore, type Screen } from '../../stores/navStore'
 import { useSettingsStore } from '../../stores/settingsStore'
 import { useThemeStore } from '../../stores/themeStore'
 import { useToastStore } from '../../stores/toastStore'
+import { useUpdateStore } from '../../stores/updateStore'
 import { ConfirmDialog } from '../common/ConfirmDialog'
 import { ManagerPinModal } from '../common/ManagerPinModal'
 import { MoneyField } from '../common/MoneyField'
@@ -23,7 +24,8 @@ export function SettingsScreen(): React.JSX.Element {
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
   const [testing, setTesting] = useState<'print' | 'drawer' | null>(null)
-  const [updateStatus, setUpdateStatus] = useState<UpdateStatusEvent | null>(null)
+  const updateStatus = useUpdateStore((s) => s.status)
+  const checkForUpdate = useUpdateStore((s) => s.check)
   const [backingUp, setBackingUp] = useState(false)
   const [dirty, setDirty] = useState(false)
   const [pendingNav, setPendingNav] = useState<Screen | null>(null)
@@ -34,10 +36,6 @@ export function SettingsScreen(): React.JSX.Element {
   useEffect(() => {
     dirtyRef.current = dirty
   }, [dirty])
-
-  // checkForUpdates() itself returns void the instant it's kicked off, well before electron-updater
-  // has actually talked to GitHub -- this is the only way the button reflects what really happened.
-  useEffect(() => window.api.autoUpdate.onStatus(setUpdateStatus), [])
 
   // Veto navigating away with unsaved edits; stash the target and let the confirm dialog re-issue
   // the nav once the manager accepts losing them.
@@ -110,11 +108,6 @@ export function SettingsScreen(): React.JSX.Element {
     const result = await window.api.settings.backupNow(form.backupFolder)
     pushToast(result.ok ? 'Backup complete' : `Backup failed: ${result.error}`, result.ok ? 'info' : 'error')
     setBackingUp(false)
-  }
-
-  async function checkForUpdate(): Promise<void> {
-    setUpdateStatus({ kind: 'checking' })
-    await window.api.autoUpdate.check()
   }
 
   async function logoutTenant(): Promise<void> {
@@ -312,18 +305,7 @@ export function SettingsScreen(): React.JSX.Element {
               {(!updateStatus || (updateStatus.kind !== 'checking' && updateStatus.kind !== 'downloading')) &&
                 'Check for Update'}
             </button>
-            {updateStatus?.kind === 'available' && (
-              <p className="text-xs text-ink-muted">Update v{updateStatus.version} found — downloading…</p>
-            )}
-            {updateStatus?.kind === 'not-available' && (
-              <p className="text-xs text-ink-muted">You&apos;re on the latest version.</p>
-            )}
-            {updateStatus?.kind === 'downloaded' && (
-              <p className="text-xs text-success">Update v{updateStatus.version} ready — installs on next restart.</p>
-            )}
-            {updateStatus?.kind === 'error' && (
-              <p className="text-xs text-danger">Update check failed: {updateStatus.message}</p>
-            )}
+            <p className="text-xs text-ink-muted">Progress and results also show as a toast on any screen.</p>
           </Section>
 
           <Section title="Tenant">
