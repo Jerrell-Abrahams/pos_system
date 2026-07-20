@@ -1,0 +1,58 @@
+{
+  "name": "pos-system",
+  "version": "1.2.0",
+  "description": "Offline-first POS",
+  "private": true,
+  "main": "./out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "dist": "node scripts/require-license-url.js && electron-vite build && electron-builder --publish never",
+    "release": "node scripts/require-license-url.js && electron-vite build && electron-builder --publish always",
+    "postinstall": "node scripts/rebuild-native.js",
+    "test": "node scripts/test.js",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json"
+  },
+  "build": {
+    "appId": "com.jerrellabrahams.pos-system",
+    "productName": "POS System",
+    "files": ["out/**/*"],
+    "asarUnpack": ["**/*.node"],
+    "npmRebuild": false,
+    "win": {
+      "target": "nsis"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "Jerrell-Abrahams",
+      "repo": "pos_system"
+    }
+  },
+  "dependencies": {
+    "@fontsource/inter": "^5.2.8",
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^12.11.1",
+    "chart.js": "^4.5.1",
+    "electron-updater": "^6.8.9",
+    "node-thermal-printer": "^4.6.0",
+    "react": "18.3.1",
+    "react-chartjs-2": "^5.3.1",
+    "react-dom": "18.3.1",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.2",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.20.1",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^5.2.0",
+    "electron": "^42.6.1",
+    "electron-builder": "^26.15.3",
+    "electron-vite": "^5.0.0",
+    "tailwindcss": "^4.3.2",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.6",
+    "vitest": "^4.1.10"
+  }
+}

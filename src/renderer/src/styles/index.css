@@ -1,0 +1,137 @@
+@import 'tailwindcss';
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+
+@theme {
+  --color-bg: #16130f;
+  --color-surface: #1e1a14;
+  --color-border: #2a251d;
+  --color-ink: #ede6d8;
+  --color-ink-muted: #a69b87;
+  --color-accent: #c9962c;
+  --color-accent-light: #e3b65c;
+  --color-accent-tint: rgba(201, 150, 44, 0.14);
+  --color-accent-border: rgba(201, 150, 44, 0.4);
+  --color-success: #7a9b6b;
+  --color-danger: #b5574a;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Light mode overrides the same tokens the utilities above were generated from, so every
+   bg-, text-, and border- class repaints automatically — no per-component dark/light variants
+   needed. Values are re-tuned per token (not just bg/ink flipped) so text and buttons still
+   clear WCAG AA contrast against light surfaces — accent-light and accent both had to get
+   darker and more saturated, since a light amber that pops on near-black bg is illegible on white. */
+:root[data-theme='light'] {
+  --color-bg: #f7f2e8;
+  --color-surface: #fffdf8;
+  --color-border: #ded2b9;
+  --color-ink: #261d10;
+  --color-ink-muted: #6f6049;
+  --color-accent: #8a5410;
+  --color-accent-light: #74470e;
+  --color-accent-tint: rgba(138, 84, 16, 0.12);
+  --color-accent-border: rgba(138, 84, 16, 0.42);
+  --color-success: #3c7a33;
+  --color-danger: #a02e1c;
+  /* Light needs a stronger glow and a genuinely deeper diagonal end — the two default creams
+     are nearly identical, so surface→bg reads as flat. See --login-glow below. */
+  --login-glow: rgba(138, 84, 16, 0.13);
+  --login-shade: #ece0ca;
+}
+
+/* Branding-panel gradient tokens (login screen). Default = the existing dark behaviour exactly
+   (accent-tint glow, diagonal down to bg), so dark is unchanged; light overrides them above. */
+:root {
+  --login-glow: var(--color-accent-tint);
+  --login-shade: var(--color-bg);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-user-select: none;
+  user-select: none;
+  overflow: hidden;
+}
+
+/* Global tap feedback for every button in the app — a POS runs on a touchscreen, so presses need
+   an immediate physical response, not just the existing active:bg-* color changes. One rule here
+   covers all buttons instantly instead of adding active:scale-95 to every button className. */
+button:not(:disabled) {
+  transition: transform 0.1s ease;
+}
+
+button:not(:disabled):active {
+  transform: scale(0.96);
+}
+
+@keyframes shake {
+  10%,
+  90% {
+    transform: translateX(-1px);
+  }
+  20%,
+  80% {
+    transform: translateX(2px);
+  }
+  30%,
+  50%,
+  70% {
+    transform: translateX(-4px);
+  }
+  40%,
+  60% {
+    transform: translateX(4px);
+  }
+}
+
+.animate-shake {
+  animation: shake 0.4s ease-in-out;
+}
+
+@keyframes screen-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-screen-in {
+  animation: screen-in 0.25s ease-out;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+  background: transparent;
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-track-piece,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+::-webkit-scrollbar-button {
+  display: none;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--color-border);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-accent-border);
+}
