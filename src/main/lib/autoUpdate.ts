@@ -2,6 +2,9 @@ import { autoUpdater } from 'electron-updater'
 import { appendLog } from './fileLog'
 
 const LOG_FILE = 'update.log'
+// A till can stay running for days between restarts -- without a periodic recheck, a newly
+// published release would only ever be seen at the next app launch or a manual button click.
+export const UPDATE_RECHECK_INTERVAL_MS = 6 * 60 * 60 * 1000
 
 // Registered once at module load (not inside checkForUpdates) -- that function runs on every
 // startup AND every "Check for Update" click, and re-attaching listeners each time would stack

@@ -26,7 +26,7 @@
       "provider": "github",
       "owner": "Jerrell-Abrahams",
       "repo": "pos_system",
-      "releaseType": "release"
+      "releaseType": "prerelease"
     }
   },
   "dependencies": {
