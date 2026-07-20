@@ -8,8 +8,8 @@
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "dist": "node scripts/require-license-url.js && electron-vite build && electron-builder --publish never",
-    "release": "node scripts/require-license-url.js && electron-vite build && electron-builder --publish always",
-    "release:instant": "node scripts/require-license-url.js && electron-vite build && electron-builder --publish always -c.publish.releaseType=release",
+    "release": "node scripts/require-license-url.js && electron-vite build && node scripts/publish.js --publish always",
+    "release:instant": "node scripts/require-license-url.js && electron-vite build && node scripts/publish.js --publish always -c.publish.releaseType=release",
     "postinstall": "node scripts/rebuild-native.js",
     "test": "node scripts/test.js",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json"
