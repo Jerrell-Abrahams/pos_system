@@ -4,6 +4,7 @@ import { createDb } from './db'
 import { runMigrations } from './db/migrate'
 import { seed } from './db/seed'
 import { registerIpcHandlers } from './ipc'
+import { registerWindowHandlers } from './ipc/window'
 import { initPrintQueue } from './lib/printQueue'
 import { installCrashHandlers } from './lib/crashLog'
 import { checkForUpdates } from './lib/autoUpdate'
@@ -26,6 +27,7 @@ function createWindow(): BrowserWindow {
     width: 1280,
     height: 800,
     show: false,
+    fullscreen: true,
     autoHideMenuBar: true,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -72,6 +74,7 @@ app.whenReady().then(() => {
   runMigrations(db)
   seed(db)
   registerIpcHandlers(db, () => syncDisplayProfiles(getDisplayProfileTargets(db)))
+  registerWindowHandlers(() => mainWindow)
   startBackupSchedule(db)
   initPrintQueue(
     () => getPrinterInterface(db),

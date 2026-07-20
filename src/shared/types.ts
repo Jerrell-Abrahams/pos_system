@@ -555,6 +555,9 @@ export interface PosApi {
     setTestWindow(profileId: number, open: boolean): Promise<TestActionResult>
     listSecondaryDisplays(): Promise<SecondaryDisplayInfo[]>
   }
+  window: {
+    toggleFullscreen(): Promise<void>
+  }
   till: {
     status(): Promise<TillStatus>
     open(input: { employeeId: number; openingCashCents: number }): Promise<TillStatus>

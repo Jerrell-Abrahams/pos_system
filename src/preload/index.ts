@@ -105,6 +105,9 @@ const api: PosApi = {
     listSecondaryDisplays: (): Promise<SecondaryDisplayInfo[]> =>
       ipcRenderer.invoke('customerDisplay:listSecondaryDisplays')
   },
+  window: {
+    toggleFullscreen: (): Promise<void> => ipcRenderer.invoke('window:toggleFullscreen')
+  },
   till: {
     status: (): Promise<TillStatus> => ipcRenderer.invoke('till:status'),
     open: (input: { employeeId: number; openingCashCents: number }): Promise<TillStatus> =>
