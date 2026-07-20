@@ -3,6 +3,8 @@ import { calcChangeCents, formatRands } from '@shared/money'
 import type { CreateSaleResult, PaymentInput, PaymentMethod } from '@shared/types'
 import { useAuthStore } from '../../stores/authStore'
 import { cartComboItemsAsSaleItems, useCartStore } from '../../stores/cartStore'
+import { useCatalogStore } from '../../stores/catalogStore'
+import { useProductsStore } from '../../stores/productsStore'
 import { useSettingsStore } from '../../stores/settingsStore'
 import { Keypad } from '../common/Keypad'
 import { SplitPaymentBuilder } from './SplitPaymentBuilder'
@@ -32,6 +34,8 @@ export function PaymentModal({ discountCents, totalCents, onClose }: PaymentModa
   const discount = useCartStore((s) => s.discount)
   const clearCart = useCartStore((s) => s.clear)
   const cardTerminals = useSettingsStore((s) => s.cardTerminals)
+  const reloadCatalog = useCatalogStore((s) => s.load)
+  const reloadProducts = useProductsStore((s) => s.load)
 
   const [stage, setStage] = useState<Stage>({ kind: 'choose' })
   const [submitting, setSubmitting] = useState(false)
@@ -51,6 +55,11 @@ export function PaymentModal({ discountCents, totalCents, onClose }: PaymentModa
         combos: comboLines.map((c) => ({ comboId: c.comboId, qty: c.qty }))
       })
       setResult(saleResult)
+      // Stock quantities just changed under products/catalog's feet — both are fetch-once
+      // stores with no other signal that a sale happened, so they'd otherwise keep showing
+      // pre-sale stock until an unrelated edit elsewhere happened to reload them.
+      void reloadCatalog()
+      void reloadProducts()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not complete sale')
       setStage({ kind: 'choose' })

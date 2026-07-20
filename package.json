@@ -1,6 +1,6 @@
 {
   "name": "pos-system",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "description": "Offline-first POS",
   "private": true,
   "main": "./out/main/index.js",
