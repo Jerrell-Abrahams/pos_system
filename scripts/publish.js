@@ -14,6 +14,7 @@ if (!process.env.GH_TOKEN) {
 }
 
 const { execSync } = require('node:child_process')
+const pkg = require('../package.json')
 const cmd = `electron-builder ${process.argv.slice(2).join(' ')}`
 
 // electron-builder fires one "create release" call per uploaded artifact (exe + blockmap);
@@ -28,3 +29,33 @@ try {
   console.error('\nPublish failed (likely the known concurrent-release race) -- retrying once...\n')
   execSync(cmd, { stdio: 'inherit' })
 }
+
+// The race above has a second, silent form: both concurrent "create release" calls can each
+// succeed (no 422), leaving two separate releases on the same tag with the assets split between
+// them -- e.g. one holds only the blockmap, the other holds latest.yml + the installer. No error,
+// no retry trigger, and tills fail their update check on whichever incomplete one they hit. Clean
+// that up here by keeping the release with the most assets (the complete one) and deleting the rest.
+async function cleanupDuplicateReleases() {
+  const { owner, repo } = pkg.build.publish
+  const tag = `v${pkg.version}`
+  const headers = {
+    'User-Agent': 'pos-system-publish-script',
+    Authorization: `token ${process.env.GH_TOKEN}`
+  }
+  const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases`, { headers })
+  if (!res.ok) return
+  const releases = (await res.json()).filter((r) => r.tag_name === tag)
+  if (releases.length <= 1) return
+
+  releases.sort((a, b) => b.assets.length - a.assets.length)
+  const [keep, ...duplicates] = releases
+  console.error(
+    `\nFound ${releases.length} releases for tag ${tag} (concurrent-release race) -- keeping id=${keep.id} (${keep.assets.length} assets), deleting the rest...\n`
+  )
+  for (const dup of duplicates) {
+    await fetch(`https://api.github.com/repos/${owner}/${repo}/releases/${dup.id}`, { method: 'DELETE', headers })
+    console.error(`Deleted duplicate release id=${dup.id} (${dup.assets.length} assets)`)
+  }
+}
+
+cleanupDuplicateReleases().catch((err) => console.error('\nDuplicate-release cleanup failed:', err.message))
