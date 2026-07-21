@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Keypad } from './Keypad'
+import { ModalBackdrop } from './ModalBackdrop'
 
 interface ManagerPinModalProps {
   title?: string
@@ -47,7 +48,7 @@ export function ManagerPinModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+    <ModalBackdrop onClose={onCancel} className="p-4">
       <div className="max-h-[90vh] w-full max-w-80 overflow-y-auto rounded-2xl border border-border bg-surface p-5 text-center">
         <h2 className="text-lg font-semibold text-ink">{title}</h2>
         {message && <p className="mt-1 text-sm text-ink-muted">{message}</p>}
@@ -78,6 +79,6 @@ export function ManagerPinModal({
           Cancel
         </button>
       </div>
-    </div>
+    </ModalBackdrop>
   )
 }

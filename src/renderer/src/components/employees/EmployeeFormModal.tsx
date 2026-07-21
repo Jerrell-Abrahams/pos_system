@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { EmployeeListItem, EmployeeRole } from '@shared/types'
 import { useAuthStore } from '../../stores/authStore'
+import { ModalBackdrop } from '../common/ModalBackdrop'
 import { PinField } from '../common/PinField'
 
 interface EmployeeFormModalProps {
@@ -51,7 +52,7 @@ export function EmployeeFormModal({ employee, onSaved, onClose }: EmployeeFormMo
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+    <ModalBackdrop onClose={onClose}>
       <div className="w-96 rounded-2xl border border-border bg-surface p-6">
         <h2 className="text-center text-lg font-semibold text-ink">{employee ? 'Edit Employee' : 'Add Employee'}</h2>
 
@@ -130,6 +131,6 @@ export function EmployeeFormModal({ employee, onSaved, onClose }: EmployeeFormMo
           </button>
         </div>
       </div>
-    </div>
+    </ModalBackdrop>
   )
 }

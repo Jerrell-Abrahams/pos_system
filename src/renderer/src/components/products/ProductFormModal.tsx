@@ -4,6 +4,7 @@ import { useProductsStore } from '../../stores/productsStore'
 import { useToastStore } from '../../stores/toastStore'
 import { ConfirmDialog } from '../common/ConfirmDialog'
 import { ManagerPinModal } from '../common/ManagerPinModal'
+import { ModalBackdrop } from '../common/ModalBackdrop'
 import { MoneyField } from '../common/MoneyField'
 import { NumberStepperField } from '../common/NumberStepperField'
 import { Select } from '../common/Select'
@@ -145,7 +146,7 @@ export function ProductFormModal({ categories, product, onSaved, onClose }: Prod
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+    <ModalBackdrop onClose={onClose}>
       <div className="max-h-[90vh] w-[420px] overflow-y-auto rounded-2xl border border-border bg-surface p-6">
         <h2 className="text-center text-lg font-semibold text-ink">{product ? 'Edit Product' : 'Add Product'}</h2>
 
@@ -279,7 +280,7 @@ export function ProductFormModal({ categories, product, onSaved, onClose }: Prod
           </button>
         </div>
       </div>
-    </div>
+    </ModalBackdrop>
   )
 }
 

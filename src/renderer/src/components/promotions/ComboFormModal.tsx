@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { formatRands } from '@shared/money'
 import { COMBO_CATEGORIES, type Category, type Combo, type ComboCategory, type ComboItemInput, type Product } from '@shared/types'
 import { ManagerPinModal } from '../common/ManagerPinModal'
+import { ModalBackdrop } from '../common/ModalBackdrop'
 import { MoneyField } from '../common/MoneyField'
 import { Select } from '../common/Select'
 
@@ -155,7 +156,7 @@ export function ComboFormModal({ products, categories, combo, onSaved, onClose }
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+    <ModalBackdrop onClose={onClose}>
       <div className="max-h-[90vh] w-[540px] overflow-y-auto rounded-2xl border border-border bg-surface p-6">
         <h2 className="text-center text-lg font-semibold text-ink">{combo ? 'Edit Combo' : 'Add Combo'}</h2>
 
@@ -367,7 +368,7 @@ export function ComboFormModal({ products, categories, combo, onSaved, onClose }
           </button>
         </div>
       </div>
-    </div>
+    </ModalBackdrop>
   )
 }
 

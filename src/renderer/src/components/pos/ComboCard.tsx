@@ -15,7 +15,7 @@ export function ComboCard({ combo, onSelect }: ComboCardProps): React.JSX.Elemen
     >
       <div>
         <span className="text-sm font-medium text-ink">🎁 {combo.name}</span>
-        <p className="mt-1 truncate text-xs text-ink-muted">
+        <p className="mt-1 text-xs text-ink-muted">
           {combo.items.map((i) => `${i.qty}x ${i.productName}`).join(' + ')}
         </p>
       </div>

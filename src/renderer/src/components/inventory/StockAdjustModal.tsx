@@ -6,6 +6,7 @@ import { useToastStore } from '../../stores/toastStore'
 import { ConfirmDialog } from '../common/ConfirmDialog'
 import { Keypad } from '../common/Keypad'
 import { ManagerPinModal } from '../common/ManagerPinModal'
+import { ModalBackdrop } from '../common/ModalBackdrop'
 import { useBarcodeScanner } from '../pos/useBarcodeScanner'
 
 interface StockAdjustModalProps {
@@ -109,7 +110,7 @@ export function StockAdjustModal({ product, onSaved, onClose }: StockAdjustModal
   const newTotal = product.stockQty + (direction === 'in' ? qty : -qty)
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+    <ModalBackdrop onClose={onClose} className="p-4">
       <div className="max-h-[90vh] w-full max-w-96 overflow-y-auto rounded-2xl border border-border bg-surface p-6">
         <h2 className="text-center text-lg font-semibold text-ink">{product.name}</h2>
         <p className="mt-1 text-center text-sm text-ink-muted">Currently {product.stockQty} in stock</p>
@@ -197,6 +198,6 @@ export function StockAdjustModal({ product, onSaved, onClose }: StockAdjustModal
           Cancel
         </button>
       </div>
-    </div>
+    </ModalBackdrop>
   )
 }

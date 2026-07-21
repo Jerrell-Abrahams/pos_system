@@ -24,6 +24,16 @@ interface ToastState {
 
 let nextId = 1
 const AUTO_DISMISS_MS = 6000
+// Keyed toasts (like update-status) get updated in place as the underlying event changes --
+// e.g. sticky 'downloading' later replaced by non-sticky 'not-available'. Each update needs its
+// own fresh timer rather than inheriting whatever was scheduled for the toast's first push.
+const timers = new Map<number, ReturnType<typeof setTimeout>>()
+
+function schedule(get: () => ToastState, id: number, sticky: boolean | undefined): void {
+  clearTimeout(timers.get(id))
+  timers.delete(id)
+  if (!sticky) timers.set(id, setTimeout(() => get().dismiss(id), AUTO_DISMISS_MS))
+}
 
 export const useToastStore = create<ToastState>((set, get) => ({
   toasts: [],
@@ -33,11 +43,16 @@ export const useToastStore = create<ToastState>((set, get) => ({
       set((state) => ({
         toasts: state.toasts.map((t) => (t.id === existing.id ? { ...t, message, tone, sticky: options?.sticky } : t))
       }))
+      schedule(get, existing.id, options?.sticky)
       return
     }
     const id = nextId++
     set((state) => ({ toasts: [...state.toasts, { id, key: options?.key, message, tone, sticky: options?.sticky }] }))
-    if (!options?.sticky) setTimeout(() => get().dismiss(id), AUTO_DISMISS_MS)
+    schedule(get, id, options?.sticky)
   },
-  dismiss: (id) => set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) }))
+  dismiss: (id) => {
+    clearTimeout(timers.get(id))
+    timers.delete(id)
+    set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) }))
+  }
 }))

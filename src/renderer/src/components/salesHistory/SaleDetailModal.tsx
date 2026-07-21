@@ -5,6 +5,7 @@ import { formatRands } from '@shared/money'
 import type { SaleDetail } from '@shared/types'
 import { useToastStore } from '../../stores/toastStore'
 import { ManagerPinModal } from '../common/ManagerPinModal'
+import { ModalBackdrop } from '../common/ModalBackdrop'
 
 interface SaleDetailModalProps {
   saleId: number
@@ -57,7 +58,7 @@ export function SaleDetailModal({ saleId, onVoided, onClose }: SaleDetailModalPr
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+    <ModalBackdrop onClose={onClose}>
       <div className="max-h-[90vh] w-[420px] overflow-y-auto rounded-2xl border border-border bg-surface p-6">
         {!detail ? (
           <p className="text-center text-sm text-ink-muted">Loading…</p>
@@ -183,6 +184,6 @@ export function SaleDetailModal({ saleId, onVoided, onClose }: SaleDetailModalPr
           </>
         )}
       </div>
-    </div>
+    </ModalBackdrop>
   )
 }

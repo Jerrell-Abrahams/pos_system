@@ -1,3 +1,5 @@
+import { ModalBackdrop } from './ModalBackdrop'
+
 interface ConfirmDialogProps {
   title: string
   message: string
@@ -14,7 +16,7 @@ export function ConfirmDialog({
   onCancel
 }: ConfirmDialogProps): React.JSX.Element {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+    <ModalBackdrop onClose={onCancel}>
       <div className="w-80 rounded-2xl border border-border bg-surface p-5">
         <h2 className="text-lg font-semibold text-ink">{title}</h2>
         <p className="mt-2 text-sm text-ink-muted">{message}</p>
@@ -35,6 +37,6 @@ export function ConfirmDialog({
           </button>
         </div>
       </div>
-    </div>
+    </ModalBackdrop>
   )
 }
