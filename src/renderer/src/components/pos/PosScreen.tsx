@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { COMBO_CATEGORIES, type ComboCategory } from '@shared/types'
 import { daysAgoLocalDate, todayLocalDate } from '@shared/dates'
 import { playBeep } from '../../lib/beep'
 import { useCartStore } from '../../stores/cartStore'
@@ -28,6 +29,7 @@ function PosScreen(): React.JSX.Element {
 
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null)
   const [showCombos, setShowCombos] = useState(false)
+  const [comboCategory, setComboCategory] = useState<ComboCategory>('Specials')
   const [searchText, setSearchText] = useState('')
   const [flash, setFlash] = useState(false)
   const [qtySoldByProduct, setQtySoldByProduct] = useState<Map<number, number>>(new Map())
@@ -84,6 +86,10 @@ function PosScreen(): React.JSX.Element {
   }, [products, selectedCategoryId, searchText, qtySoldByProduct])
 
   const activeCombos = useMemo(() => combos.filter((c) => c.active), [combos])
+  const shownCombos = useMemo(
+    () => activeCombos.filter((c) => c.category === comboCategory),
+    [activeCombos, comboCategory]
+  )
 
   return (
     <div className={`flex h-full transition-shadow ${flash ? 'shadow-[inset_0_0_0_4px_var(--color-accent)]' : ''}`}>
@@ -99,8 +105,26 @@ function PosScreen(): React.JSX.Element {
       />
       <div className="flex min-w-0 flex-1 flex-col">
         {showCombos ? (
-          <div className="min-h-0 flex-1">
-            <ComboGrid combos={activeCombos} onSelect={addCombo} />
+          <div className="flex min-h-0 flex-1 flex-col">
+            <div className="flex gap-2 overflow-x-auto p-3 pb-0">
+              {COMBO_CATEGORIES.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setComboCategory(c)}
+                  className={`h-11 shrink-0 rounded-xl border px-4 text-sm font-medium ${
+                    comboCategory === c
+                      ? 'border-accent-border bg-accent-tint text-accent-light'
+                      : 'border-border text-ink-muted active:bg-accent-tint'
+                  }`}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+            <div className="min-h-0 flex-1">
+              <ComboGrid combos={shownCombos} onSelect={addCombo} />
+            </div>
           </div>
         ) : (
           <>

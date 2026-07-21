@@ -369,6 +369,14 @@ export interface TillCloseResult {
   differenceCents: number
 }
 
+// 'Specials' combos are free-form (name + price + item list). The rest are guided spirit combos:
+// a bottle + always-included ice + a mixer, priced bottle + chargeExtra. All four are POS tabs.
+export type ComboCategory = 'Specials' | 'Brandy' | 'Rum' | 'Whiskey'
+export const COMBO_CATEGORIES: ComboCategory[] = ['Specials', 'Brandy', 'Rum', 'Whiskey']
+
+// Which slot a spirit-combo item fills, so the guided form can be reopened. NULL for Specials items.
+export type ComboItemRole = 'bottle' | 'ice' | 'mixer' | null
+
 export interface ComboItemInput {
   productId: number
   qty: number
@@ -378,6 +386,7 @@ export interface ComboItem {
   productId: number
   productName: string
   qty: number
+  role: ComboItemRole
 }
 
 export interface Combo {
@@ -385,25 +394,30 @@ export interface Combo {
   name: string
   priceCents: number
   active: boolean
+  category: ComboCategory
+  // The amount added on top of the bottle price for spirit combos; null for Specials.
+  chargeExtraCents: number | null
   items: ComboItem[]
   // Sum of each item's current sell price * qty — what the bundle would cost bought separately.
   componentsCents: number
 }
 
+// Flat over the two combo shapes. Specials uses name/priceCents/items; spirit combos use
+// bottleProductId/mixerProductId/chargeExtraCents (server derives name, price and items).
 export interface ComboCreateInput {
+  category: ComboCategory
   name: string
   priceCents: number
   items: ComboItemInput[]
+  bottleProductId: number | null
+  mixerProductId: number | null
+  chargeExtraCents: number | null
   authorizedBy: number
 }
 
-export interface ComboUpdateInput {
+export interface ComboUpdateInput extends ComboCreateInput {
   id: number
-  name: string
-  priceCents: number
-  items: ComboItemInput[]
   active: boolean
-  authorizedBy: number
 }
 
 // 'announcement' is a free-text slide: its `title` holds the message shown large and centered,

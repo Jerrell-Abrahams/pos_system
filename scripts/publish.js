@@ -50,8 +50,31 @@ async function cleanupDuplicateReleases() {
   releases.sort((a, b) => b.assets.length - a.assets.length)
   const [keep, ...duplicates] = releases
   console.error(
-    `\nFound ${releases.length} releases for tag ${tag} (concurrent-release race) -- keeping id=${keep.id} (${keep.assets.length} assets), deleting the rest...\n`
+    `\nFound ${releases.length} releases for tag ${tag} (concurrent-release race) -- keeping id=${keep.id} (${keep.assets.length} assets), merging in any assets missing from it...\n`
   )
+
+  // The race can split assets across releases with no error at all -- e.g. one release gets
+  // {latest.yml, exe}, the other gets only {blockmap}. Picking the release with "most assets"
+  // isn't enough on its own: if that one is still missing the blockmap, deleting the other
+  // silently throws away the only copy of it, breaking differential downloads for anyone
+  // updating from this version. Copy over anything `keep` doesn't already have before deleting.
+  const keepNames = new Set(keep.assets.map((a) => a.name))
+  for (const dup of duplicates) {
+    for (const asset of dup.assets) {
+      if (keepNames.has(asset.name)) continue
+      console.error(`Recovering ${asset.name} from duplicate release id=${dup.id} (missing from kept release)...`)
+      const assetRes = await fetch(asset.url, { headers: { ...headers, Accept: 'application/octet-stream' } })
+      const buf = Buffer.from(await assetRes.arrayBuffer())
+      const uploadUrl = `https://uploads.github.com/repos/${owner}/${repo}/releases/${keep.id}/assets?name=${encodeURIComponent(asset.name)}`
+      await fetch(uploadUrl, {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/octet-stream' },
+        body: buf
+      })
+      keepNames.add(asset.name)
+    }
+  }
+
   for (const dup of duplicates) {
     await fetch(`https://api.github.com/repos/${owner}/${repo}/releases/${dup.id}`, { method: 'DELETE', headers })
     console.error(`Deleted duplicate release id=${dup.id} (${dup.assets.length} assets)`)

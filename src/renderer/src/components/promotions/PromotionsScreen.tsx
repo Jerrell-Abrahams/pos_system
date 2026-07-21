@@ -10,6 +10,7 @@ export function PromotionsScreen(): React.JSX.Element {
   const loaded = useCombosStore((s) => s.loaded)
   const load = useCombosStore((s) => s.load)
   const products = useCatalogStore((s) => s.products)
+  const categories = useCatalogStore((s) => s.categories)
   const loadCatalog = useCatalogStore((s) => s.load)
   const catalogLoaded = useCatalogStore((s) => s.loaded)
 
@@ -73,6 +74,7 @@ export function PromotionsScreen(): React.JSX.Element {
       {editing !== null && (
         <ComboFormModal
           products={products}
+          categories={categories}
           combo={editing === 'new' ? null : editing}
           onSaved={handleSaved}
           onClose={() => setEditing(null)}

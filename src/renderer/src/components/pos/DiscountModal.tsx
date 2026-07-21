@@ -15,6 +15,7 @@ interface DiscountModalProps {
 
 const MAX_FIXED_DISCOUNT_CENTS = 9999900
 const MAX_PERCENT = 100
+const QUICK_FIXED_RANDS = [2, 4, 6, 8, 10]
 
 export function DiscountModal({
   subtotalCents,
@@ -24,7 +25,7 @@ export function DiscountModal({
   onClose
 }: DiscountModalProps): React.JSX.Element {
   const discountThresholdPercent = useSettingsStore((s) => s.discountThresholdPercent)
-  const [type, setType] = useState<'fixed' | 'percent'>(current?.type ?? 'percent')
+  const [type, setType] = useState<'fixed' | 'percent'>(current?.type ?? 'fixed')
   const [value, setValue] = useState(current?.value ?? 0)
   const [showManagerGate, setShowManagerGate] = useState(false)
 
@@ -104,6 +105,21 @@ export function DiscountModal({
             <p className="mt-1 text-sm text-danger">Over {discountThresholdPercent}% — needs manager approval</p>
           )}
         </div>
+
+        {type === 'fixed' && (
+          <div className="mt-4 flex gap-2">
+            {QUICK_FIXED_RANDS.map((rand) => (
+              <button
+                key={rand}
+                type="button"
+                onClick={() => setValue(rand * 100)}
+                className="h-10 flex-1 rounded-xl border border-border text-sm font-medium text-ink-muted active:bg-accent-tint"
+              >
+                R{rand}
+              </button>
+            ))}
+          </div>
+        )}
 
         <div className="mt-4">
           <Keypad
