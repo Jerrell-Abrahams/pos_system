@@ -67,7 +67,7 @@ export function InventoryScreen(): React.JSX.Element {
     <div className="flex h-full flex-col p-4">
       <div className="flex items-center gap-3">
         <div className="flex-1">
-          <SearchBar value={searchText} onChange={setSearchText} />
+          <SearchBar value={searchText} onChange={setSearchText} autoFocus />
         </div>
         {lowStockCount > 0 && (
           <span className="shrink-0 rounded-lg border border-danger px-4 py-2 text-sm font-medium text-danger">
