@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { formatRands } from '@shared/money'
+import { distinctSizes, parseSize } from '@shared/productSize'
 import type { ProductDetail } from '@shared/types'
 import { useCatalogStore } from '../../stores/catalogStore'
 import { useProductsStore } from '../../stores/productsStore'
 import { CategoryTabs } from '../common/CategoryTabs'
+import { SizeTabs } from '../common/SizeTabs'
 import { SearchBar } from '../pos/SearchBar'
 import { ProductFormModal } from './ProductFormModal'
 
@@ -16,6 +18,7 @@ export function ProductsScreen(): React.JSX.Element {
 
   const [searchText, setSearchText] = useState('')
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null)
+  const [selectedSize, setSelectedSize] = useState<string | null>(null)
   const [editing, setEditing] = useState<ProductDetail | null | 'new'>(null)
 
   useEffect(() => {
@@ -27,7 +30,9 @@ export function ProductsScreen(): React.JSX.Element {
     return (id: number | null): string => (id !== null ? (map.get(id) ?? '—') : '—')
   }, [categories])
 
-  const filtered = useMemo(() => {
+  // Category + search matches, before the size sub-tab is applied — the tab row is built from
+  // this set so switching sizes never makes the other size tabs disappear.
+  const categoryMatched = useMemo(() => {
     const query = searchText.trim().toLowerCase()
     return products.filter((p) => {
       if (selectedCategoryId !== null && p.categoryId !== selectedCategoryId) return false
@@ -35,6 +40,14 @@ export function ProductsScreen(): React.JSX.Element {
       return p.name.toLowerCase().includes(query) || p.barcodes.some((b) => b.includes(query))
     })
   }, [products, selectedCategoryId, searchText])
+
+  const sizeTabs = useMemo(() => distinctSizes(categoryMatched.map((p) => p.name)), [categoryMatched])
+  const effectiveSize = selectedSize && sizeTabs.length > 1 && sizeTabs.includes(selectedSize) ? selectedSize : null
+
+  const filtered = useMemo(
+    () => (effectiveSize ? categoryMatched.filter((p) => parseSize(p.name)?.label === effectiveSize) : categoryMatched),
+    [categoryMatched, effectiveSize]
+  )
 
   function handleSaved(): void {
     setEditing(null)
@@ -61,9 +74,18 @@ export function ProductsScreen(): React.JSX.Element {
         <CategoryTabs
           categories={categories}
           selectedCategoryId={selectedCategoryId}
-          onSelect={setSelectedCategoryId}
+          onSelect={(id) => {
+            setSelectedCategoryId(id)
+            setSelectedSize(null)
+          }}
         />
       </div>
+
+      {sizeTabs.length > 1 && (
+        <div className="mt-2">
+          <SizeTabs sizes={sizeTabs} selectedSize={effectiveSize} onSelect={setSelectedSize} />
+        </div>
+      )}
 
       <div className="mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto">
         {filtered.map((product) => (

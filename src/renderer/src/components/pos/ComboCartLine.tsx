@@ -14,12 +14,22 @@ export function ComboCartLine({ combo, onChangeQty, onRemove }: ComboCartLinePro
 
   return (
     <div className="rounded-xl border border-accent-border bg-accent-tint p-3">
-      <div className="flex items-start justify-between gap-2">
-        <button type="button" className="min-w-0 flex-1 text-left" onClick={() => setStepperOpen((o) => !o)}>
-          <p className="truncate text-sm font-medium text-accent-light">🎁 {combo.name}</p>
-          <p className="text-xs text-ink-muted">qty {combo.qty} · tap to adjust</p>
+      <div className="flex items-center gap-3">
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent text-sm font-bold text-bg">
+          {combo.qty}
+        </div>
+        <button
+          type="button"
+          className="min-w-0 flex-1 text-left"
+          onClick={() => setStepperOpen((o) => !o)}
+        >
+          <p className={`text-sm font-semibold text-accent-light ${stepperOpen ? '' : 'truncate'}`}>
+            🎁 {combo.name}
+          </p>
+          <p className="text-xs text-ink-muted">
+            <span className="font-semibold">{formatRands(combo.priceCents * combo.qty)}</span> · tap to adjust
+          </p>
         </button>
-        <span className="shrink-0 text-sm font-semibold text-ink">{formatRands(combo.priceCents * combo.qty)}</span>
         <button
           type="button"
           onClick={onRemove}

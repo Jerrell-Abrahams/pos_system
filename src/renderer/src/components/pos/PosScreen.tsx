@@ -123,7 +123,7 @@ function PosScreen(): React.JSX.Element {
       <div className="flex min-w-0 flex-1 flex-col">
         {showCombos ? (
           <div className="flex min-h-0 flex-1 flex-col">
-            <div className="flex gap-2 overflow-x-auto p-3 pb-0">
+            <div className="flex gap-2 overflow-x-auto p-3 pb-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {COMBO_CATEGORIES.map((c) => (
                 <button
                   key={c}
@@ -149,7 +149,7 @@ function PosScreen(): React.JSX.Element {
               <SearchBar value={searchText} onChange={setSearchText} />
             </div>
             {sizeChips.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto px-3 pb-2">
+              <div className="flex gap-2 overflow-x-auto px-3 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 <SizeChip label="All" active={effectiveSize === null} onClick={() => setSelectedSize(null)} />
                 {sizeChips.map((size) => (
                   <SizeChip

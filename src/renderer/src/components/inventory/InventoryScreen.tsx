@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
+import { distinctSizes, parseSize } from '@shared/productSize'
 import type { ProductDetail } from '@shared/types'
 import { useCatalogStore } from '../../stores/catalogStore'
 import { useNavStore } from '../../stores/navStore'
 import { useProductsStore } from '../../stores/productsStore'
 import { CategoryTabs } from '../common/CategoryTabs'
+import { SizeTabs } from '../common/SizeTabs'
 import { SearchBar } from '../pos/SearchBar'
 import { StockAdjustModal } from './StockAdjustModal'
 
@@ -17,6 +19,7 @@ export function InventoryScreen(): React.JSX.Element {
 
   const [searchText, setSearchText] = useState('')
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null)
+  const [selectedSize, setSelectedSize] = useState<string | null>(null)
   const [adjusting, setAdjusting] = useState<ProductDetail | null>(null)
   // Captured once on mount — a Business Health card can deep-link here filtered to one
   // product, or sorted by urgency; normal sidebar navigation clears params before we mount.
@@ -39,18 +42,29 @@ export function InventoryScreen(): React.JSX.Element {
     [activeProducts, focusProductId]
   )
 
-  const filtered = useMemo(() => {
+  // Category + search matches, before the size sub-tab is applied — the tab row is built from
+  // this set so switching sizes never makes the other size tabs disappear.
+  const categoryMatched = useMemo(() => {
     const query = searchText.trim().toLowerCase()
-    const base = scoped.filter((p) => {
+    return scoped.filter((p) => {
       if (selectedCategoryId !== null && p.categoryId !== selectedCategoryId) return false
       if (!query) return true
       return p.name.toLowerCase().includes(query) || p.barcodes.some((b) => b.includes(query))
     })
+  }, [scoped, selectedCategoryId, searchText])
+
+  const sizeTabs = useMemo(() => distinctSizes(categoryMatched.map((p) => p.name)), [categoryMatched])
+  const effectiveSize = selectedSize && sizeTabs.length > 1 && sizeTabs.includes(selectedSize) ? selectedSize : null
+
+  const filtered = useMemo(() => {
+    const base = effectiveSize
+      ? categoryMatched.filter((p) => parseSize(p.name)?.label === effectiveSize)
+      : categoryMatched
     if (!sortLowStock) return base
     return [...base].sort(
       (a, b) => a.stockQty / (a.lowStockThreshold || 1) - b.stockQty / (b.lowStockThreshold || 1)
     )
-  }, [scoped, selectedCategoryId, searchText, sortLowStock])
+  }, [categoryMatched, effectiveSize, sortLowStock])
 
   const lowStockCount = useMemo(
     () => activeProducts.filter((p) => p.stockQty <= p.lowStockThreshold).length,
@@ -83,8 +97,17 @@ export function InventoryScreen(): React.JSX.Element {
           <CategoryTabs
             categories={categories}
             selectedCategoryId={selectedCategoryId}
-            onSelect={setSelectedCategoryId}
+            onSelect={(id) => {
+              setSelectedCategoryId(id)
+              setSelectedSize(null)
+            }}
           />
+        </div>
+      )}
+
+      {focusProductId == null && sizeTabs.length > 1 && (
+        <div className="mt-2">
+          <SizeTabs sizes={sizeTabs} selectedSize={effectiveSize} onSelect={setSelectedSize} />
         </div>
       )}
 

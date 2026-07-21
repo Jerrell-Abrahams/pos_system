@@ -33,7 +33,7 @@ function Tab({
     <button
       type="button"
       onClick={onClick}
-      className={`h-12 rounded-xl border px-4 text-sm font-medium ${
+      className={`h-12 rounded-xl border px-4 text-sm font-medium transition-colors duration-100 ${
         active
           ? 'border-accent-border bg-accent-tint text-accent-light'
           : 'border-border text-ink-muted active:bg-accent-tint'

@@ -50,31 +50,33 @@ export function AppShell(): React.JSX.Element {
     <div className="flex h-full flex-col">
       <Header />
       <main className="min-h-0 flex-1">
-        {screen === 'products' ? (
-          <ProductsScreen />
-        ) : screen === 'inventory' ? (
-          <InventoryScreen />
-        ) : screen === 'salesHistory' ? (
-          <SalesHistoryScreen />
-        ) : screen === 'dashboard' ? (
-          <DashboardScreen />
-        ) : screen === 'settings' && employee?.role === 'manager' ? (
-          <SettingsScreen />
-        ) : screen === 'analytics' && employee?.role === 'manager' ? (
-          <AnalyticsScreen />
-        ) : screen === 'promotions' && employee?.role === 'manager' ? (
-          <PromotionsScreen />
-        ) : screen === 'employees' && employee?.role === 'manager' ? (
-          <EmployeesScreen />
-        ) : screen === 'history' && employee?.role === 'manager' ? (
-          <HistoryScreen />
-        ) : screen === 'displayManager' && employee?.role === 'manager' ? (
-          <DisplayManagerScreen />
-        ) : !tillChecked ? null : till ? (
-          <PosScreen />
-        ) : (
-          <OpenTillPanel />
-        )}
+        <div key={screen} className="h-full animate-screen-in">
+          {screen === 'products' ? (
+            <ProductsScreen />
+          ) : screen === 'inventory' ? (
+            <InventoryScreen />
+          ) : screen === 'salesHistory' ? (
+            <SalesHistoryScreen />
+          ) : screen === 'dashboard' ? (
+            <DashboardScreen />
+          ) : screen === 'settings' && employee?.role === 'manager' ? (
+            <SettingsScreen />
+          ) : screen === 'analytics' && employee?.role === 'manager' ? (
+            <AnalyticsScreen />
+          ) : screen === 'promotions' && employee?.role === 'manager' ? (
+            <PromotionsScreen />
+          ) : screen === 'employees' && employee?.role === 'manager' ? (
+            <EmployeesScreen />
+          ) : screen === 'history' && employee?.role === 'manager' ? (
+            <HistoryScreen />
+          ) : screen === 'displayManager' && employee?.role === 'manager' ? (
+            <DisplayManagerScreen />
+          ) : !tillChecked ? null : till ? (
+            <PosScreen />
+          ) : (
+            <OpenTillPanel />
+          )}
+        </div>
       </main>
       <EmployeePill />
     </div>

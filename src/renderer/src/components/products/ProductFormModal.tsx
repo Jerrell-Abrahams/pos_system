@@ -217,8 +217,11 @@ export function ProductFormModal({ categories, product, onSaved, onClose }: Prod
               type="checkbox"
               checked={is6Pack}
               onChange={(e) => setIs6Pack(e.target.checked)}
-              className="h-5 w-5 accent-accent"
+              className="peer sr-only"
             />
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded border border-border bg-surface text-xs text-transparent peer-checked:border-accent peer-checked:bg-accent peer-checked:text-bg">
+              ✓
+            </span>
             <span className="text-sm text-ink">Is 6 Pack</span>
           </label>
 

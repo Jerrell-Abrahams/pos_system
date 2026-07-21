@@ -17,7 +17,7 @@ export function ModalBackdrop({ onClose, className, children }: ModalBackdropPro
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/60 ${className ?? ''}`}
+      className={`fixed inset-0 z-50 flex animate-fade-in items-center justify-center bg-black/60 ${className ?? ''}`}
       onMouseDown={(e) => {
         pressedBackdrop.current = e.target === e.currentTarget
       }}
@@ -25,7 +25,7 @@ export function ModalBackdrop({ onClose, className, children }: ModalBackdropPro
         if (pressedBackdrop.current && e.target === e.currentTarget) onClose()
       }}
     >
-      {children}
+      <div className="animate-modal-in">{children}</div>
     </div>
   )
 }

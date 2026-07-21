@@ -13,7 +13,7 @@ export function ProductCard({ product, onSelect }: ProductCardProps): React.JSX.
       onClick={() => onSelect(product)}
       className="flex min-h-[90px] flex-col justify-between rounded-xl border border-border bg-surface p-3 text-left active:border-accent-border active:bg-accent-tint"
     >
-      <span className="text-sm font-normal text-ink-muted">{product.name}</span>
+      <span className="line-clamp-2 text-sm font-normal text-ink-muted">{product.name}</span>
       <span className="text-xl font-bold text-accent-light">{formatRands(product.sellPriceCents)}</span>
     </button>
   )
