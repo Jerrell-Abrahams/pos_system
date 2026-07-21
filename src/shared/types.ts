@@ -371,8 +371,17 @@ export interface TillCloseResult {
 
 // 'Specials' combos are free-form (name + price + item list). The rest are guided spirit combos:
 // a bottle + always-included ice + a mixer, priced bottle + chargeExtra. All are POS tabs.
-export type ComboCategory = 'Specials' | 'Brandy' | 'Rum' | 'Whiskey' | 'Gin' | 'Vodka' | 'Cognac'
-export const COMBO_CATEGORIES: ComboCategory[] = ['Specials', 'Brandy', 'Rum', 'Whiskey', 'Gin', 'Vodka', 'Cognac']
+export type ComboCategory = 'Specials' | 'Brandy' | 'Rum' | 'Whiskey' | 'Gin' | 'Vodka' | 'Cognac' | 'Liqueur'
+export const COMBO_CATEGORIES: ComboCategory[] = [
+  'Specials',
+  'Brandy',
+  'Rum',
+  'Whiskey',
+  'Gin',
+  'Vodka',
+  'Cognac',
+  'Liqueur'
+]
 
 // Which slot a spirit-combo item fills, so the guided form can be reopened. NULL for Specials items.
 export type ComboItemRole = 'bottle' | 'ice' | 'mixer' | null

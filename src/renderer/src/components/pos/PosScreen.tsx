@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { COMBO_CATEGORIES, type ComboCategory } from '@shared/types'
 import { daysAgoLocalDate, todayLocalDate } from '@shared/dates'
+import { distinctSizes, parseSize } from '@shared/productSize'
 import { playBeep } from '../../lib/beep'
 import { useCartStore } from '../../stores/cartStore'
 import { useCatalogStore } from '../../stores/catalogStore'
@@ -31,6 +32,7 @@ function PosScreen(): React.JSX.Element {
   const [showCombos, setShowCombos] = useState(false)
   const [comboCategory, setComboCategory] = useState<ComboCategory>('Specials')
   const [searchText, setSearchText] = useState('')
+  const [selectedSize, setSelectedSize] = useState<string | null>(null)
   const [flash, setFlash] = useState(false)
   const [qtySoldByProduct, setQtySoldByProduct] = useState<Map<number, number>>(new Map())
 
@@ -68,13 +70,27 @@ function PosScreen(): React.JSX.Element {
 
   useBarcodeScanner(handleScan)
 
-  const filteredProducts = useMemo(() => {
+  // Products matching category + search, before the size chip is applied — the chip row is built
+  // from this set so switching sizes never makes the other size chips disappear.
+  const categoryMatched = useMemo(() => {
     const query = searchText.trim().toLowerCase()
-    const matched = products.filter((product) => {
+    return products.filter((product) => {
       if (selectedCategoryId !== null && product.categoryId !== selectedCategoryId) return false
       if (!query) return true
       return product.name.toLowerCase().includes(query) || product.barcodes.some((b) => b.includes(query))
     })
+  }, [products, selectedCategoryId, searchText])
+
+  const sizeChips = useMemo(() => distinctSizes(categoryMatched.map((p) => p.name)), [categoryMatched])
+  // Relax a stale selection to "All" once it no longer applies -- either the size dropped out of
+  // the list, or the chip row itself is about to hide (sizeChips.length > 1 below), which would
+  // otherwise leave the filter silently active with no chip left to clear it.
+  const effectiveSize = selectedSize && sizeChips.length > 1 && sizeChips.includes(selectedSize) ? selectedSize : null
+
+  const filteredProducts = useMemo(() => {
+    const matched = effectiveSize
+      ? categoryMatched.filter((p) => parseSize(p.name)?.label === effectiveSize)
+      : categoryMatched
 
     // Best sellers first, so the tiles a cashier hits all shift are in the first row rather than
     // wherever the alphabet put them. Name breaks ties, which also means a till with no sales yet
@@ -83,7 +99,7 @@ function PosScreen(): React.JSX.Element {
       const byQty = (qtySoldByProduct.get(b.id) ?? 0) - (qtySoldByProduct.get(a.id) ?? 0)
       return byQty !== 0 ? byQty : a.name.localeCompare(b.name)
     })
-  }, [products, selectedCategoryId, searchText, qtySoldByProduct])
+  }, [categoryMatched, effectiveSize, qtySoldByProduct])
 
   const activeCombos = useMemo(() => combos.filter((c) => c.active), [combos])
   const shownCombos = useMemo(
@@ -99,6 +115,7 @@ function PosScreen(): React.JSX.Element {
         onSelect={(id) => {
           setShowCombos(false)
           setSelectedCategoryId(id)
+          setSelectedSize(null)
         }}
         combosActive={showCombos}
         onSelectCombos={() => setShowCombos(true)}
@@ -128,9 +145,22 @@ function PosScreen(): React.JSX.Element {
           </div>
         ) : (
           <>
-            <div className="p-3">
+            <div className="p-3 pb-2">
               <SearchBar value={searchText} onChange={setSearchText} />
             </div>
+            {sizeChips.length > 1 && (
+              <div className="flex gap-2 overflow-x-auto px-3 pb-2">
+                <SizeChip label="All" active={effectiveSize === null} onClick={() => setSelectedSize(null)} />
+                {sizeChips.map((size) => (
+                  <SizeChip
+                    key={size}
+                    label={size}
+                    active={effectiveSize === size}
+                    onClick={() => setSelectedSize(size)}
+                  />
+                ))}
+              </div>
+            )}
             <div className="min-h-0 flex-1">
               <ProductGrid products={filteredProducts} onSelect={addProduct} />
             </div>
@@ -139,6 +169,30 @@ function PosScreen(): React.JSX.Element {
       </div>
       <CartPanel />
     </div>
+  )
+}
+
+function SizeChip({
+  label,
+  active,
+  onClick
+}: {
+  label: string
+  active: boolean
+  onClick: () => void
+}): React.JSX.Element {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`h-10 shrink-0 rounded-lg border px-4 text-sm font-medium ${
+        active
+          ? 'border-accent-border bg-accent-tint text-accent-light'
+          : 'border-border text-ink-muted active:bg-accent-tint'
+      }`}
+    >
+      {label}
+    </button>
   )
 }
 
