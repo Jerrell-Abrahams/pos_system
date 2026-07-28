@@ -6,42 +6,76 @@ try {
   process.loadEnvFile()
 } catch {}
 
-if (!process.env.GH_TOKEN) {
-  console.error('\nRefusing to publish: GH_TOKEN is not set.\n')
-  console.error('electron-builder needs it to create/update the GitHub release. Set it first:\n')
-  console.error('  PowerShell:  $env:GH_TOKEN="ghp_..."; npm run release\n')
-  process.exit(1)
-}
-
 const { execSync } = require('node:child_process')
 const pkg = require('../package.json')
-const cmd = `electron-builder ${process.argv.slice(2).join(' ')}`
+const args = process.argv.slice(2)
+const cmd = `electron-builder ${args.join(' ')}`
 
-// electron-builder fires one "create release" call per uploaded artifact (exe + blockmap);
-// whichever call loses that race gets back a 422 "already_exists" and aborts the whole run,
-// even though the winner's release now exists with some assets already on it. This has hit
-// nearly every publish so far -- re-running always fixes it (electron-builder sees the release
-// already exists and just uploads what's still missing), so do that automatically once instead
-// of a human re-running the same command by hand again.
-try {
-  execSync(cmd, { stdio: 'inherit' })
-} catch {
-  console.error('\nPublish failed (likely the known concurrent-release race) -- retrying once...\n')
-  execSync(cmd, { stdio: 'inherit' })
+const { owner, repo } = pkg.build.publish
+const tag = `v${pkg.version}`
+const headers = {
+  'User-Agent': 'pos-system-publish-script',
+  Authorization: `token ${process.env.GH_TOKEN}`
 }
 
-// The race above has a second, silent form: both concurrent "create release" calls can each
-// succeed (no 422), leaving two separate releases on the same tag with the assets split between
-// them -- e.g. one holds only the blockmap, the other holds latest.yml + the installer. No error,
-// no retry trigger, and tills fail their update check on whichever incomplete one they hit. Clean
-// that up here by keeping the release with the most assets (the complete one) and deleting the rest.
-async function cleanupDuplicateReleases() {
-  const { owner, repo } = pkg.build.publish
-  const tag = `v${pkg.version}`
-  const headers = {
-    'User-Agent': 'pos-system-publish-script',
-    Authorization: `token ${process.env.GH_TOKEN}`
+// Which flavor is this? `release:instant` passes -c.publish.releaseType=release and goes live to
+// every till on its next check; everything else stages a prerelease that electron-updater ignores
+// until promoted. Exported because getting it backwards is the one bug here with real blast
+// radius -- it either ships an unvetted build to every tenant or silently stages one meant to go
+// live -- and neither shows up as an error anywhere.
+const isLiveRelease = (argv) => argv.some((a) => a.includes('releaseType=release'))
+
+// Root cause of the duplicate releases below: app-builder-lib's PublishManager caches its
+// publisher *after* an await (`publisher = await createPublisher(...)` then `.set(...)`), so the
+// exe and its blockmap -- scheduled concurrently -- both miss the cache and each build their own
+// GitHubPublisher. Each one owns a separate lazy "get or create the release", so each creates
+// one, and the tag ends up with two. Retrying can't prevent that; it's a check-then-act race
+// upstream, and the doubled "publishing" log line every release is it happening.
+//
+// But electron-publish only creates a release when the tag has none -- find an existing one and
+// every publisher just returns it. So create it here first and both publishers take that path.
+// Has to happen shortly before the upload: electron-publish refuses to add assets to a release
+// published more than 2h ago (set EP_GH_IGNORE_TIME=true if a slow retry ever trips that).
+async function ensureRelease() {
+  const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases?per_page=100`, {
+    headers
+  })
+  if (res.ok && (await res.json()).some((r) => r.tag_name === tag)) return
+
+  const prerelease = !isLiveRelease(args)
+  const created = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ tag_name: tag, name: pkg.version, prerelease })
+  })
+  if (!created.ok) {
+    // Most likely the tag isn't pushed yet -- GitHub rejects a non-draft release without one.
+    console.error(`\nRefusing to publish: could not create release ${tag} (${created.status}).`)
+    console.error(`${(await created.text()).slice(0, 300)}\n`)
+    console.error(`Push the tag first:  git tag ${tag} && git push origin ${tag}\n`)
+    process.exit(1)
   }
+  console.error(`Created ${prerelease ? 'prerelease' : 'release'} ${tag} up front (race guard).\n`)
+}
+
+function runBuild() {
+  // Kept as a backstop for transient upload failures (the installer is ~110MB); electron-builder
+  // is idempotent here -- on a re-run it reuses the release and uploads only what's missing.
+  try {
+    execSync(cmd, { stdio: 'inherit' })
+  } catch {
+    console.error('\nPublish failed -- retrying once...\n')
+    execSync(cmd, { stdio: 'inherit' })
+  }
+}
+
+// Kept as a backstop even with ensureRelease() above: GitHub's release list is eventually
+// consistent, so a publisher can still miss a release created moments earlier and create its own.
+// When that happens there's no error at all -- the assets just split across two releases on the
+// same tag (one holds latest.yml + the installer, the other only the blockmap), and tills fail
+// their update check on whichever incomplete one they hit. Keep the release with the most assets
+// (the complete one) and delete the rest.
+async function cleanupDuplicateReleases() {
   const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases`, { headers })
   if (!res.ok) return
   const releases = (await res.json()).filter((r) => r.tag_name === tag)
@@ -81,4 +115,21 @@ async function cleanupDuplicateReleases() {
   }
 }
 
-cleanupDuplicateReleases().catch((err) => console.error('\nDuplicate-release cleanup failed:', err.message))
+async function main() {
+  if (!process.env.GH_TOKEN) {
+    console.error('\nRefusing to publish: GH_TOKEN is not set.\n')
+    console.error('electron-builder needs it to create/update the GitHub release. Set it first:\n')
+    console.error('  PowerShell:  $env:GH_TOKEN="ghp_..."; npm run release\n')
+    process.exit(1)
+  }
+  await ensureRelease()
+  runBuild()
+  await cleanupDuplicateReleases().catch((err) =>
+    console.error('\nDuplicate-release cleanup failed:', err.message)
+  )
+}
+
+// Guarded so the test can import ensureRelease/isLiveRelease without publishing anything.
+if (require.main === module) main()
+
+module.exports = { ensureRelease, isLiveRelease }
