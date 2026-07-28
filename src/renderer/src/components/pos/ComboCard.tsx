@@ -11,11 +11,11 @@ export function ComboCard({ combo, onSelect }: ComboCardProps): React.JSX.Elemen
     <button
       type="button"
       onClick={() => onSelect(combo)}
-      className="flex min-h-[90px] flex-col justify-between rounded-xl border border-accent-border bg-accent-tint p-3 text-left active:bg-accent-border/40"
+      className="flex h-[112px] flex-col justify-between rounded-xl border border-accent-border bg-accent-tint p-3 text-left active:bg-accent-border/40"
     >
       <div>
-        <span className="text-sm font-medium text-ink">🎁 {combo.name}</span>
-        <p className="mt-1 text-xs text-ink-muted">
+        <span className="truncate text-sm font-medium text-ink">🎁 {combo.name}</span>
+        <p className="mt-1 line-clamp-2 text-xs text-ink-muted">
           {combo.items.map((i) => `${i.qty}x ${i.productName}`).join(' + ')}
         </p>
       </div>

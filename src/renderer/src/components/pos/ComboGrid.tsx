@@ -16,7 +16,7 @@ export function ComboGrid({ combos, onSelect }: ComboGridProps): React.JSX.Eleme
   }
 
   return (
-    <div className="grid h-full content-start grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 overflow-y-auto p-3">
+    <div className="grid h-full content-start grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-3 overflow-y-auto p-3">
       {combos.map((combo) => (
         <ComboCard key={combo.id} combo={combo} onSelect={onSelect} />
       ))}
