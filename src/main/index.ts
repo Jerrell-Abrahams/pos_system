@@ -16,11 +16,22 @@ import type { LicenseState, PrintIssueEvent } from '@shared/types'
 
 installCrashHandlers()
 
-if (!app.requestSingleInstanceLock()) {
-  app.quit()
-}
+// app.quit() does not stop the rest of this module evaluating, so the result has to be
+// carried down to the whenReady handler below -- otherwise a second launch went on to open
+// the DB and build a window anyway, racing the first instance instead of deferring to it.
+const gotSingleInstanceLock = app.requestSingleInstanceLock()
+if (!gotSingleInstanceLock) app.quit()
 
 let mainWindow: BrowserWindow | null = null
+
+// Without this, launching again while the first instance is alive but its window is hidden or
+// minimised does nothing visible at all -- the click is swallowed and the till looks dead.
+app.on('second-instance', () => {
+  if (!mainWindow) return
+  if (mainWindow.isMinimized()) mainWindow.restore()
+  mainWindow.show()
+  mainWindow.focus()
+})
 
 function createWindow(): BrowserWindow {
   const win = new BrowserWindow({
@@ -70,6 +81,7 @@ function getDisplayProfileTargets(db: Database.Database): ProfileTarget[] {
 }
 
 app.whenReady().then(() => {
+  if (!gotSingleInstanceLock) return
   const db = createDb()
   runMigrations(db)
   seed(db)
