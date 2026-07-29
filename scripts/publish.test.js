@@ -1,7 +1,9 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createRequire } from 'node:module'
 
-const { ensureRelease, isLiveRelease } = createRequire(import.meta.url)('./publish.js')
+const require_ = createRequire(import.meta.url)
+const { ensureRelease, isLiveRelease } = require_('./publish.js')
+const pkg = require_('../package.json')
 
 describe('isLiveRelease', () => {
   // The whole staged-vs-live distinction rides on this one string. A false negative stages a
@@ -14,29 +16,34 @@ describe('isLiveRelease', () => {
   })
 })
 
+// Stubbed rather than hitting GitHub. This previously called the real ensureRelease() against the
+// live API, guarded only by `skipIf(!GH_TOKEN)` -- but vitest loads .env, so the token is always
+// present on a dev machine and the test always ran. Its premise ("package.json's version is
+// already released, so this early-returns") only holds right after a release; on any bumped,
+// not-yet-released version it took the *create* path instead and left a real empty prerelease
+// behind. Three of those accumulated on the repo before anyone noticed.
 describe('ensureRelease', () => {
-  // Needs a token and the network, so it only runs where those exist (i.e. the release machine).
-  it.skipIf(!process.env.GH_TOKEN)(
-    'is a no-op when the tag already has a release',
-    async () => {
-      // package.json's version is already released, so this must take the early-return path.
-      // If it ever creates instead, the guard has stopped working and duplicates come back.
-      const before = await listReleases()
-      await ensureRelease()
-      expect(await listReleases()).toEqual(before)
-    },
-    30000
-  )
-})
+  afterEach(() => vi.unstubAllGlobals())
 
-async function listReleases() {
-  const pkg = createRequire(import.meta.url)('../package.json')
-  const { owner, repo } = pkg.build.publish
-  const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases?per_page=100`, {
-    headers: {
-      'User-Agent': 'pos-system-publish-test',
-      Authorization: `token ${process.env.GH_TOKEN}`
-    }
+  function stubGitHub(existingTags) {
+    const methods = []
+    vi.stubGlobal('fetch', async (_url, init) => {
+      methods.push(init?.method ?? 'GET')
+      return { ok: true, json: async () => existingTags.map((t) => ({ tag_name: t })) }
+    })
+    return methods
+  }
+
+  it('does not create when the tag already has a release', async () => {
+    const methods = stubGitHub([`v${pkg.version}`])
+    await ensureRelease()
+    expect(methods).toEqual(['GET'])
   })
-  return (await res.json()).filter((r) => r.tag_name === `v${pkg.version}`).map((r) => r.id)
-}
+
+  // The guard failing open is what brought back duplicate releases on one tag.
+  it('creates one when the tag has none', async () => {
+    const methods = stubGitHub(['v0.0.0-nothing-like-ours'])
+    await ensureRelease()
+    expect(methods).toEqual(['GET', 'POST'])
+  })
+})
